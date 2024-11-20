@@ -1,5 +1,4 @@
 <?php
-
 include 'db.php';
 
 $mensagem = "";
@@ -25,8 +24,9 @@ $stmt->bind_result($nome, $email, $telefone, $foto_perfil);
 $stmt->fetch();
 $stmt->close();
 
-// Atualizar perfil (telefone e foto de perfil)
-if (isset($_POST['telefone']) || isset($_FILES['foto_perfil'])) {
+// Atualizar perfil (nome, telefone e foto de perfil)
+if (isset($_POST['nome']) || isset($_POST['telefone']) || isset($_FILES['foto_perfil'])) {
+    $nome = $_POST['nome'];
     $telefone = $_POST['telefone'];
     $foto_perfil = null;
 
@@ -35,9 +35,9 @@ if (isset($_POST['telefone']) || isset($_FILES['foto_perfil'])) {
         move_uploaded_file($_FILES['foto_perfil']['tmp_name'], $foto_perfil);
     }
 
-    $sql = "UPDATE usuarios SET telefone = ?, foto_perfil = ? WHERE id = ?";
+    $sql = "UPDATE usuarios SET nome = ?, telefone = ?, foto_perfil = ? WHERE id = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ssi", $telefone, $foto_perfil, $usuario_id);
+    $stmt->bind_param("sssi", $nome, $telefone, $foto_perfil, $usuario_id);
 
     if ($stmt->execute()) {
         $msg_perfil = "Perfil atualizado com sucesso!";
@@ -68,6 +68,13 @@ if (isset($_POST['placa']) && isset($_POST['marca']) && isset($_POST['cor']) && 
     $stmt->close();
 }
 
+// Obter os veículos registrados pelo usuário
+$sql_veiculos = "SELECT id, placa, marca, cor, tipo FROM veiculos WHERE usuario_id = ?";
+$stmt_veiculos = $conn->prepare($sql_veiculos);
+$stmt_veiculos->bind_param("i", $usuario_id);
+$stmt_veiculos->execute();
+$result_veiculos = $stmt_veiculos->get_result();
+
 $conn->close();
 ?>
 
@@ -97,9 +104,6 @@ $conn->close();
                 <p><strong>Nome:</strong> <?php echo htmlspecialchars($nome); ?></p>
                 <p><strong>Email:</strong> <?php echo htmlspecialchars($email); ?></p>
                 <p><strong>Telefone:</strong> <?php echo htmlspecialchars($telefone); ?></p>
-                <?php if ($foto_perfil): ?>
-                    <img src="<?php echo htmlspecialchars($foto_perfil); ?>" alt="Foto de Perfil">
-                <?php endif; ?>
             </div>
 
             <!-- Exibir mensagens de sucesso/erro -->
@@ -109,12 +113,12 @@ $conn->close();
             <!-- Formulário para editar perfil -->
             <h3>Editar Perfil</h3>
             <form action="" method="post" enctype="multipart/form-data">
+                <label for="nome">Nome:</label>
+                <input type="text" id="nome" name="nome" value="<?php echo htmlspecialchars($nome); ?>" required>
+                
                 <label for="telefone">Telefone:</label>
                 <input type="text" id="telefone" name="telefone" value="<?php echo htmlspecialchars($telefone); ?>">
-
-                <label for="foto_perfil">Foto de Perfil:</label>
-                <input type="file" id="foto_perfil" name="foto_perfil" accept="image/*">
-
+                
                 <button type="submit">Salvar Alterações</button>
             </form>
 
@@ -132,15 +136,27 @@ $conn->close();
                     <button type="submit">Registrar Veículo</button>
                 </form>
             </section>
+
+            <!-- Exibir veículos cadastrados -->
+            <h3>Meus Veículos</h3>
+            <table>
+                <tr>
+                    <th>Placa</th>
+                    <th>Marca</th>
+                    <th>Cor</th>
+                    <th>Tipo</th>
+                </tr>
+                <?php while ($veiculo = $result_veiculos->fetch_assoc()): ?>
+                    <tr>
+                        <td><?php echo $veiculo['placa']; ?></td>
+                        <td><?php echo $veiculo['marca']; ?></td>
+                        <td><?php echo $veiculo['cor']; ?></td>
+                        <td><?php echo $veiculo['tipo']; ?></td>
+                    </tr>
+                <?php endwhile; ?>
+            </table>
         </section>
     </main>
-
-    <?php if ($mensagem): ?>
-    <div>
-        <?php echo $mensagem; ?>
-    </div>
-    <?php endif; ?>
-
 
     <footer>
         <p>© 2024 Sistema de Estacionamento. Todos os direitos reservados.</p>
