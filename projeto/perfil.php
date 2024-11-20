@@ -1,5 +1,4 @@
 <?php
-
 include 'db.php';
 
 $mensagem = "";
@@ -68,6 +67,13 @@ if (isset($_POST['placa']) && isset($_POST['marca']) && isset($_POST['cor']) && 
     $stmt->close();
 }
 
+// Obter os veículos registrados pelo usuário
+$sql_veiculos = "SELECT id, placa, marca, cor, tipo FROM veiculos WHERE usuario_id = ?";
+$stmt_veiculos = $conn->prepare($sql_veiculos);
+$stmt_veiculos->bind_param("i", $usuario_id);
+$stmt_veiculos->execute();
+$result_veiculos = $stmt_veiculos->get_result();
+
 $conn->close();
 ?>
 
@@ -132,15 +138,27 @@ $conn->close();
                     <button type="submit">Registrar Veículo</button>
                 </form>
             </section>
+
+            <!-- Exibir veículos cadastrados -->
+            <h3>Meus Veículos</h3>
+            <table>
+                <tr>
+                    <th>Placa</th>
+                    <th>Marca</th>
+                    <th>Cor</th>
+                    <th>Tipo</th>
+                </tr>
+                <?php while ($veiculo = $result_veiculos->fetch_assoc()): ?>
+                    <tr>
+                        <td><?php echo $veiculo['placa']; ?></td>
+                        <td><?php echo $veiculo['marca']; ?></td>
+                        <td><?php echo $veiculo['cor']; ?></td>
+                        <td><?php echo $veiculo['tipo']; ?></td>
+                    </tr>
+                <?php endwhile; ?>
+            </table>
         </section>
     </main>
-
-    <?php if ($mensagem): ?>
-    <div>
-        <?php echo $mensagem; ?>
-    </div>
-    <?php endif; ?>
-
 
     <footer>
         <p>© 2024 Sistema de Estacionamento. Todos os direitos reservados.</p>
